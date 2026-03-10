@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Brabus Control Panel 🐱</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0a0f;
+    --surface: #16111c;
+    --surface2: #1e1728;
+    --border: #2e2040;
+    --pink: #ff6b9d;
+    --pink-soft: #ff9ec4;
+    --lavender: #c084fc;
+    --text: #f0e6ff;
+    --text-dim: #8b7aa0;
+    --green: #86efac;
+    --red: #fca5a5;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Space Mono', monospace;
+    min-height: 100vh;
+    padding: 24px 16px 60px;
+    background-image:
+      radial-gradient(ellipse 60% 40% at 80% 10%, rgba(192,132,252,.08) 0%, transparent 60%),
+      radial-gradient(ellipse 40% 30% at 10% 80%, rgba(255,107,157,.06) 0%, transparent 60%);
+  }
+
+  /* floating hearts bg */
+  .hearts-bg {
+    position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0;
+  }
+  .hearts-bg span {
+    position: absolute;
+    font-size: 14px;
+    opacity: 0;
+    animation: floatHeart linear infinite;
+    color: var(--pink);
+  }
+  @keyframes floatHeart {
+    0%   { opacity:0;   transform: translateY(110vh) rotate(0deg); }
+    10%  { opacity:.25; }
+    90%  { opacity:.1; }
+    100% { opacity:0;   transform: translateY(-10vh) rotate(30deg); }
+  }
+
+  .container { position: relative; z-index: 1; max-width: 680px; margin: 0 auto; }
+
+  /* Header */
+  header { text-align: center; margin-bottom: 40px; }
+  .cat-ascii {
+    font-size: 11px;
+    line-height: 1.4;
+    color: var(--pink-soft);
+    margin-bottom: 16px;
+    white-space: pre;
+    display: inline-block;
+    text-align: left;
+  }
+  h1 {
+    font-family: 'Lora', serif;
+    font-size: clamp(22px, 5vw, 32px);
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+  h1 span { color: var(--pink); font-style: italic; }
+  .subtitle { color: var(--text-dim); font-size: 12px; margin-top: 6px; letter-spacing: 1px; }
+
+  /* Device IP input */
+  .ip-bar {
+    display: flex; gap: 10px; align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 10px 14px;
+    margin-bottom: 32px;
+  }
+  .ip-bar label { font-size: 11px; color: var(--text-dim); white-space: nowrap; }
+  .ip-bar input {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--lavender); font-family: 'Space Mono', monospace; font-size: 13px;
+  }
+  .ip-bar input::placeholder { color: var(--border); }
+  #statusDot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--text-dim); flex-shrink: 0;
+    transition: background .3s;
+  }
+  #statusDot.ok  { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  #statusDot.err { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute; top: 0; left: 0; right: 0; height: 2px;
+    background: linear-gradient(90deg, var(--pink), var(--lavender));
+    opacity: .6;
+  }
+
+  .card-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 20px;
+  }
+  .card-icon { font-size: 20px; }
+  .card-title {
+    font-family: 'Lora', serif;
+    font-size: 17px; font-weight: 600;
+    color: var(--text);
+  }
+  .card-hint { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+
+  /* Date picker */
+  .date-row { display: flex; gap: 12px; flex-wrap: wrap; }
+  .date-field { display: flex; flex-direction: column; gap: 6px; flex: 1; min-width: 80px; }
+  .date-field label { font-size: 11px; color: var(--text-dim); letter-spacing: .5px; }
+  .date-field input[type=number] {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px;
+    color: var(--text); font-family: 'Space Mono', monospace; font-size: 14px;
+    outline: none; width: 100%;
+    transition: border-color .2s;
+  }
+  .date-field input[type=number]:focus { border-color: var(--pink); }
+  input[type=number]::-webkit-inner-spin-button { opacity: .4; }
+
+  /* Message inputs */
+  .msg-list { display: flex; flex-direction: column; gap: 10px; }
+  .msg-item { display: flex; gap: 8px; align-items: center; }
+  .msg-num {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--surface2); border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px; color: var(--text-dim); flex-shrink: 0;
+  }
+  .msg-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px;
+    color: var(--text); font-family: 'Space Mono', monospace; font-size: 12px;
+    outline: none;
+    transition: border-color .2s;
+  }
+  .msg-input:focus { border-color: var(--pink-soft); }
+  .msg-input::placeholder { color: var(--border); }
+
+  /* Secret textarea */
+  .secret-input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+    color: var(--lavender); font-family: 'Lora', serif; font-style: italic;
+    font-size: 14px; outline: none; resize: vertical; min-height: 80px; line-height: 1.6;
+    transition: border-color .2s;
+  }
+  .secret-input:focus { border-color: var(--lavender); }
+  .secret-input::placeholder { color: var(--border); }
+
+  /* Buttons */
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 11px 22px; border-radius: 10px; border: none; cursor: pointer;
+    font-family: 'Space Mono', monospace; font-size: 12px; font-weight: 700;
+    letter-spacing: .5px;
+    transition: opacity .15s, transform .1s, box-shadow .2s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-pink {
+    background: linear-gradient(135deg, var(--pink), #e040a0);
+    color: white;
+    box-shadow: 0 4px 16px rgba(255,107,157,.3);
+  }
+  .btn-pink:hover { box-shadow: 0 6px 24px rgba(255,107,157,.45); }
+  .btn-lav {
+    background: linear-gradient(135deg, var(--lavender), #9333ea);
+    color: white;
+    box-shadow: 0 4px 16px rgba(192,132,252,.3);
+  }
+  .btn-lav:hover { box-shadow: 0 6px 24px rgba(192,132,252,.45); }
+  .btn-ghost {
+    background: transparent; border: 1px solid var(--border);
+    color: var(--text-dim);
+  }
+  .btn-ghost:hover { border-color: var(--pink); color: var(--pink); }
+  .btn-row { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
+
+  /* Toast */
+  #toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px);
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 50px; padding: 10px 22px;
+    font-size: 13px; color: var(--text);
+    transition: transform .3s cubic-bezier(.34,1.56,.64,1), opacity .3s;
+    opacity: 0; z-index: 100;
+    display: flex; align-items: center; gap: 8px;
+  }
+  #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  #toast.ok  { border-color: var(--green);  color: var(--green); }
+  #toast.err { border-color: var(--red);    color: var(--red); }
+
+  /* Preview bar */
+  .preview {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 14px;
+    margin-top: 14px; font-size: 12px; color: var(--text-dim);
+  }
+  .preview strong { color: var(--pink-soft); }
+
+  /* Days counter display */
+  .days-display {
+    text-align: center; padding: 16px;
+    background: var(--surface2); border-radius: 12px; margin-top: 16px;
+  }
+  .days-big {
+    font-family: 'Lora', serif; font-size: 48px; font-weight: 600;
+    color: var(--pink); line-height: 1;
+  }
+  .days-label { font-size: 11px; color: var(--text-dim); margin-top: 4px; letter-spacing: 1px; }
+
+  @media (max-width: 480px) {
+    .card { padding: 18px; }
+    .date-row { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Floating hearts -->
+<div class="hearts-bg" id="heartsBg"></div>
+
+<div class="container">
+
+  <!-- Header -->
+  <header>
+    <div class="cat-ascii">  /\_____/\
+ (  o   o  )
+ (  =^.^=  )
+  (  -----  )
+   \_______/</div>
+    <h1>Brabus <span>Control Panel</span> ♡</h1>
+    <p class="subtitle">update your pawnagachi from anywhere</p>
+  </header>
+
+  <!-- Device IP -->
+  <div class="ip-bar">
+    <label>DEVICE&nbsp;IP</label>
+    <input type="text" id="deviceIp" placeholder="192.168.x.x" value="192.168.1.100">
+    <div id="statusDot" title="connection status"></div>
+  </div>
+
+  <!-- Date card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">📅</span>
+      <div>
+        <div class="card-title">Today's Date</div>
+        <div class="card-hint">keeps the day counter & anniversary countdown accurate</div>
+      </div>
+    </div>
+
+    <div class="date-row">
+      <div class="date-field">
+        <label>YEAR</label>
+        <input type="number" id="year" value="2026" min="2024" max="2099">
+      </div>
+      <div class="date-field">
+        <label>MONTH</label>
+        <input type="number" id="month" value="3" min="1" max="12">
+      </div>
+      <div class="date-field">
+        <label>DAY</label>
+        <input type="number" id="day" value="9" min="1" max="31">
+      </div>
+    </div>
+
+    <div class="days-display">
+      <div class="days-big" id="daysCount">—</div>
+      <div class="days-label">days together since Sep 10, 2025 ♡</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-pink" onclick="sendDate()">💾 Send to device</button>
+      <button class="btn btn-ghost" onclick="setToday()">Use today</button>
+    </div>
+  </div>
+
+  <!-- Messages card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">💌</span>
+      <div>
+        <div class="card-title">Love Messages</div>
+        <div class="card-hint">she cycles through these with the button</div>
+      </div>
+    </div>
+
+    <div class="msg-list" id="msgList"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-pink" onclick="sendMessages()">💾 Send to device</button>
+      <button class="btn btn-ghost" onclick="loadFromDevice()">↓ Load current</button>
+    </div>
+  </div>
+
+  <!-- Secret card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">🤫</span>
+      <div>
+        <div class="card-title">Secret Message</div>
+        <div class="card-hint">shown when she holds both buttons at once</div>
+      </div>
+    </div>
+
+    <textarea class="secret-input" id="secretMsg" placeholder="write something just for her...">this was made with all my love just for you. always.</textarea>
+
+    <div class="btn-row">
+      <button class="btn btn-lav" onclick="sendSecret()">💜 Send to device</button>
+    </div>
+  </div>
+
+  <!-- Special date card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">🌸</span>
+      <div>
+        <div class="card-title">Special Date</div>
+        <div class="card-hint">screen 3 on the device — fully customisable</div>
+      </div>
+    </div>
+
+    <div class="date-field" style="margin-bottom:12px;">
+      <label>LABEL (shown on screen)</label>
+      <input class="msg-input" id="specLabel" value="anniversary" placeholder="e.g. birthday, our trip...">
+    </div>
+
+    <div class="date-row">
+      <div class="date-field">
+        <label>YEAR</label>
+        <input type="number" id="specYear" value="2026" min="2020" max="2099">
+      </div>
+      <div class="date-field">
+        <label>MONTH</label>
+        <input type="number" id="specMonth" value="9" min="1" max="12">
+      </div>
+      <div class="date-field">
+        <label>DAY</label>
+        <input type="number" id="specDay" value="10" min="1" max="31">
+      </div>
+    </div>
+
+    <div style="display:flex; gap:10px; margin-top:14px; flex-wrap:wrap;">
+      <button class="btn" id="btnCountDown" onclick="setSpecMode(true)"
+              style="flex:1; background:var(--pink); color:white; box-shadow:0 4px 16px rgba(255,107,157,.3);">
+        ⏳ Count down to date
+      </button>
+      <button class="btn btn-ghost" id="btnCountUp" onclick="setSpecMode(false)" style="flex:1;">
+        📅 Count up from date
+      </button>
+    </div>
+    <div id="specPreview" class="preview" style="margin-top:14px;"></div>
+
+    <div class="btn-row">
+      <button class="btn btn-pink" onclick="sendSpecialDate()">💾 Send to device</button>
+    </div>
+  </div>
+
+  <!-- WiFi 2 card -->
+  <div class="card">
+    <div class="card-header">
+      <span class="card-icon">📡</span>
+      <div>
+        <div class="card-title">Second WiFi Network</div>
+        <div class="card-hint">device tries this if the main network isn't found</div>
+      </div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:10px;">
+      <div class="date-field">
+        <label>NETWORK NAME (SSID)</label>
+        <input class="msg-input" id="wifi2ssid" placeholder="e.g. university wifi, hotspot...">
+      </div>
+      <div class="date-field">
+        <label>PASSWORD</label>
+        <input class="msg-input" id="wifi2pass" type="password" placeholder="password">
+      </div>
+    </div>
+
+    <div class="preview" style="margin-top:12px; font-size:11px;">
+      ℹ️ After sending, reboot the device for it to try the new network.
+      The primary network hardcoded in the code is always tried first.
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-lav" onclick="sendWifi2()">📡 Send to device</button>
+    </div>
+  </div>
+
+  <!-- Send all -->
+  <div style="text-align:center; margin-top:8px; padding-bottom:20px;">
+    <button class="btn btn-pink" style="font-size:14px; padding:14px 32px;" onclick="sendAll()">
+      ✨ Send Everything
+    </button>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div id="toast"></div>
+
+<script>
+// ── Floating hearts ───────────────────────────────────────
+const bg = document.getElementById('heartsBg');
+for (let i = 0; i < 18; i++) {
+  const s = document.createElement('span');
+  s.textContent = ['♥','♡','❤','💕','💗'][Math.floor(Math.random()*5)];
+  s.style.left = Math.random()*100 + 'vw';
+  s.style.animationDuration = (8 + Math.random()*14) + 's';
+  s.style.animationDelay    = (Math.random()*12) + 's';
+  s.style.fontSize = (10 + Math.random()*12) + 'px';
+  bg.appendChild(s);
+}
+
+// ── Messages ──────────────────────────────────────────────
+const defaultMsgs = [
+  "I love youuuu so muchhhh <3","tviy Brabus <3","the best zaya ever <3",
+  "the most beautiful girl in the world ^_^","love you for everrrr <3 oo"
+];
+const msgList = document.getElementById('msgList');
+function buildMsgList(msgs) {
+  msgList.innerHTML = '';
+  msgs.forEach((m, i) => {
+    const div = document.createElement('div');
+    div.className = 'msg-item';
+    div.innerHTML = `<div class="msg-num">${i+1}</div>
+      <input class="msg-input" data-idx="${i}" value="${escHtml(m)}" placeholder="message ${i+1}...">`;
+    msgList.appendChild(div);
+  });
+}
+buildMsgList(defaultMsgs);
+function escHtml(s){ return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;'); }
+
+// ── Date helpers ──────────────────────────────────────────
+function dateToDays(y,m,d){
+  if(m<3){m+=12;y--;} return Math.floor(365*y+y/4-y/100+y/400+(153*m+8)/5+d-719469);
+}
+function updateDaysDisplay(){
+  const y=+document.getElementById('year').value;
+  const m=+document.getElementById('month').value;
+  const d=+document.getElementById('day').value;
+  document.getElementById('daysCount').textContent = Math.max(0,dateToDays(y,m,d)-dateToDays(2025,9,10));
+}
+['year','month','day'].forEach(id=>document.getElementById(id).addEventListener('input',updateDaysDisplay));
+
+function setToday(){
+  const n=new Date();
+  document.getElementById('year').value=n.getFullYear();
+  document.getElementById('month').value=n.getMonth()+1;
+  document.getElementById('day').value=n.getDate();
+  updateDaysDisplay();
+}
+setToday();
+
+// ── Special date ──────────────────────────────────────────
+let specCountDown = true;
+
+function setSpecMode(down){
+  specCountDown = down;
+  document.getElementById('btnCountDown').style.background = down ? 'var(--pink)' : 'transparent';
+  document.getElementById('btnCountDown').style.color      = down ? 'white' : 'var(--text-dim)';
+  document.getElementById('btnCountDown').style.border     = down ? 'none' : '1px solid var(--border)';
+  document.getElementById('btnCountUp').style.background   = !down ? 'var(--lavender)' : 'transparent';
+  document.getElementById('btnCountUp').style.color        = !down ? 'white' : 'var(--text-dim)';
+  document.getElementById('btnCountUp').style.border       = !down ? 'none' : '1px solid var(--border)';
+  updateSpecPreview();
+}
+setSpecMode(true);
+
+function updateSpecPreview(){
+  const y=+document.getElementById('specYear').value;
+  const m=+document.getElementById('specMonth').value;
+  const d=+document.getElementById('specDay').value;
+  const lbl=document.getElementById('specLabel').value||'special date';
+  const now=new Date(); const todayDays=dateToDays(now.getFullYear(),now.getMonth()+1,now.getDate());
+  const specDays=dateToDays(y,m,d);
+  const diff=Math.abs(specDays-todayDays);
+  const pre=document.getElementById('specPreview');
+  pre.innerHTML = specCountDown
+    ? `<strong>${diff}</strong> days until <em>${lbl}</em>`
+    : `<strong>${diff}</strong> days since <em>${lbl}</em>`;
+}
+['specYear','specMonth','specDay','specLabel'].forEach(id=>{
+  const el=document.getElementById(id);
+  if(el) el.addEventListener('input',updateSpecPreview);
+});
+updateSpecPreview();
+
+// ── Toast ─────────────────────────────────────────────────
+let toastTimer;
+function toast(msg,type='ok'){
+  const el=document.getElementById('toast');
+  el.textContent=(type==='ok'?'✓ ':'✗ ')+msg;
+  el.className='show '+type;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>{el.className='';},3000);
+}
+
+// ── API ───────────────────────────────────────────────────
+function ip(){ return 'http://'+document.getElementById('deviceIp').value.trim(); }
+
+async function post(path,body){
+  const res=await fetch(ip()+path,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+  return res.json();
+}
+
+async function ping(){
+  const dot=document.getElementById('statusDot');
+  try{
+    const res=await fetch(ip()+'/status',{signal:AbortSignal.timeout(3000)});
+    if(res.ok){dot.className='ok';return await res.json();}
+    dot.className='err';
+  }catch{dot.className='err';}
+  return null;
+}
+
+// ── Send functions ────────────────────────────────────────
+async function sendDate(){
+  try{
+    await post('/date',{year:+document.getElementById('year').value,month:+document.getElementById('month').value,day:+document.getElementById('day').value});
+    toast('Date updated!');
+  }catch{toast('Could not reach device','err');}
+}
+
+async function sendMessages(){
+  const msgs=Array.from(msgList.querySelectorAll('.msg-input')).map(i=>i.value);
+  try{ await post('/messages',{messages:msgs}); toast('Messages updated!'); }
+  catch{ toast('Could not reach device','err'); }
+}
+
+async function sendSecret(){
+  try{ await post('/secret',{secret:document.getElementById('secretMsg').value}); toast('Secret updated 🤫'); }
+  catch{ toast('Could not reach device','err'); }
+}
+
+async function sendSpecialDate(){
+  try{
+    await post('/specialdate',{
+      year:+document.getElementById('specYear').value,
+      month:+document.getElementById('specMonth').value,
+      day:+document.getElementById('specDay').value,
+      countDown:specCountDown,
+      label:document.getElementById('specLabel').value
+    });
+    toast('Special date updated! 🌸');
+  }catch{toast('Could not reach device','err');}
+}
+
+async function sendWifi2(){
+  const ssid=document.getElementById('wifi2ssid').value.trim();
+  const pass=document.getElementById('wifi2pass').value;
+  if(!ssid){toast('Enter a network name first','err');return;}
+  try{
+    await post('/wifi2',{ssid,password:pass});
+    toast('WiFi saved! Reboot device to connect 📡');
+  }catch{toast('Could not reach device','err');}
+}
+
+async function sendAll(){
+  try{
+    await post('/date',{year:+document.getElementById('year').value,month:+document.getElementById('month').value,day:+document.getElementById('day').value});
+    await post('/messages',{messages:Array.from(msgList.querySelectorAll('.msg-input')).map(i=>i.value)});
+    await post('/secret',{secret:document.getElementById('secretMsg').value});
+    await post('/specialdate',{year:+document.getElementById('specYear').value,month:+document.getElementById('specMonth').value,day:+document.getElementById('specDay').value,countDown:specCountDown,label:document.getElementById('specLabel').value});
+    const ssid=document.getElementById('wifi2ssid').value.trim();
+    if(ssid) await post('/wifi2',{ssid,password:document.getElementById('wifi2pass').value});
+    toast('Everything sent! ✨');
+  }catch{toast('Could not reach device','err');}
+}
+
+async function loadFromDevice(){
+  const data=await ping();
+  if(!data){toast('Could not reach device','err');return;}
+  if(data.messages) buildMsgList(data.messages);
+  if(data.secret)   document.getElementById('secretMsg').value=data.secret;
+  if(data.year){
+    document.getElementById('year').value=data.year;
+    document.getElementById('month').value=data.month;
+    document.getElementById('day').value=data.day;
+    updateDaysDisplay();
+  }
+  if(data.specYear){
+    document.getElementById('specYear').value=data.specYear;
+    document.getElementById('specMonth').value=data.specMonth;
+    document.getElementById('specDay').value=data.specDay;
+    document.getElementById('specLabel').value=data.specLabel||'anniversary';
+    setSpecMode(data.specCountDown!==false);
+  }
+  if(data.wifi2ssid) document.getElementById('wifi2ssid').value=data.wifi2ssid;
+  toast('Loaded from device!');
+}
+
+document.getElementById('deviceIp').addEventListener('change',ping);
+ping();
+</script>
+</body>
+</html>
